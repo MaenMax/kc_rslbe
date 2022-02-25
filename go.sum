@@ -1,0 +1,15 @@
+git.kaiostech.com/cloud/kc_core v1.7.0 h1:gtfcrGRS0Re3/N02i/gARBGjgWE4UelpqIywZYVWaPM=
+git.kaiostech.com/cloud/kc_core v1.7.0/go.mod h1:raYiTnbDQSBKaHHk0oYv7lIWYt3iIqghb45vSR3HGQI=
+git.kaiostech.com/cloud/kc_core_ext v1.0.12/go.mod h1:JWsjNVz/c8G1Q4L4j1I5fLNir2HOxVSJfIDMgPx10Mk=
+git.kaiostech.com/cloud/kc_oauth2_ext v1.0.2/go.mod h1:zuzkH9eVubD+/+e9DsRRvJP/lFs2lZpZdlpg40rViDc=
+git.kaiostech.com/cloud/kc_sys_ext v1.0.13/go.mod h1:yrYIBgzZrjww0hjo2OPoP7vYRCcfDk8kOYj17ObrI6c=
+git.kaiostech.com/cloud/thirdparty v1.2.0/go.mod h1:XcUAhOOP6chfMFm6U0l4a+K2qNOITn3+AZyAo+jZ2eM=
+git.kaiostech.com/cloud/thirdparty v1.4.0 h1:0T3W8M0s+SxRMOte7MbI5pYBtQ6F1aRSbk7xMQk92FE=
+git.kaiostech.com/cloud/thirdparty v1.4.0/go.mod h1:XcUAhOOP6chfMFm6U0l4a+K2qNOITn3+AZyAo+jZ2eM=
+github.com/golang/protobuf v1.3.2 h1:6nsPYzhq5kReh6QImI3k5qWzO4PEbvbIW2cwSfR/6xs=
+github.com/golang/protobuf v1.3.2/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
+github.com/nyaruka/phonenumbers v1.0.73 h1:bP2WN8/NUP8tQebR+WCIejFaibwYMHOaB7MQVayclUo=
+github.com/nyaruka/phonenumbers v1.0.73/go.mod h1:3aiS+PS3DuYwkbK3xdcmRwMiPNECZ0oENH8qUT1lY7Q=
+golang.org/x/text v0.3.7 h1:olpwvP2KacW1ZWvsR7uQhoyTYvKAupfQrRGBFM352Gk=
+golang.org/x/text v0.3.7/go.mod h1:u+2+/6zg+i71rQMx5EYifcz6MCKuco9NR6JIITiCfzQ=
+golang.org/x/tools v0.0.0-20180917221912-90fa682c2a6e/go.mod h1:n7NCudcB/nEzxVGmLbDWY5pfWTLqBcC2KZ6jyYvM4mQ=
