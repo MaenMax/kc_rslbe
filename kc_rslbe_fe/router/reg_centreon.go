@@ -4,7 +4,7 @@ import (
 	"git.kaiostech.com/cloud/common/utils/handlers_common"
 )
 
-func init_centreon() {
+func init_centreon() (routes handlers_common.T_Routes) {
 
 	routes = append(routes, handlers_common.T_Route{
 		Name:        "Global Performance Raw Counters for Centreon",
@@ -76,4 +76,5 @@ func init_centreon() {
 		TC:          nil,
 	})
 
+	return
 }

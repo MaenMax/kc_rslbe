@@ -9,7 +9,7 @@ import (
 
 // net/http/pprof only registers its handlers with http.DefaultServeMux.
 // Since we are not using the default mux, we need to remap the default endpoints.
-func init_profiling() {
+func init_profiling() (routes handlers_common.T_Routes) {
 
 	routes = append(routes, handlers_common.T_Route{
 		Name:        "Global Performance - Profling Index Page",
@@ -165,4 +165,5 @@ func init_profiling() {
 		TC:          nil,
 	})
 
+	return
 }

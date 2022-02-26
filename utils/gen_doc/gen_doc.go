@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"git.kaiostech.com/cloud/common/config"
 	"git.kaiostech.com/cloud/common/utils/handlers_common"
-	"git.kaiostech.com/cloud/common/utils/raml"
+	"git.kaiostech.com/cloud/common/utils/raml/v2"
 	"git.kaiostech.com/cloud/kc_rslbe/utils/version"
 	"os"
 	"time"
@@ -56,12 +56,12 @@ func main() {
 	router.Init()
 
 	microservices := []T_MicroService{
-		{name: exec_name, desc: fmt.Sprintf("KaiCloud (%s)", exec_name), routes: router.Routes()},
+		{name: exec_name, desc: fmt.Sprintf("KaiCloud (%s)", exec_name), routes: router.AppRoutes()},
 	}
 
 	protocols := []string{"https"}
 
-	r = raml.New(".kaiostech.com", version.Get_Version(), protocols, "KaiCloud MicroServices")
+	r = raml.New("https://api.kaiostech.com", version.Get_Version(), protocols, "KaiCloud Remote SimLock")
 
 	route_count := 0
 	for _, ms := range microservices {

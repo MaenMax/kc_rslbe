@@ -14,15 +14,11 @@ import (
 
 var mutex sync.Mutex
 
-func Routes() handlers_common.T_Routes {
-	return routes
-}
-
 func NewRouter(max_req_config int, max_mem_percentage int) *mux.Router {
-    var (
-        handler http.Handler
-        aud_list []string
-    )
+	var (
+		handler  http.Handler
+		aud_list []string
+	)
 
 	mutex.Lock()
 	handlers_common.Init_Throttle(max_req_config)
@@ -30,7 +26,7 @@ func NewRouter(max_req_config int, max_mem_percentage int) *mux.Router {
 
 	router := mux.NewRouter().StrictSlash(true)
 
-	for _, route := range routes {
+	for _, route := range Routes() {
 		handler = route.HandlerFunc
 
 		/*
@@ -54,9 +50,9 @@ func NewRouter(max_req_config int, max_mem_percentage int) *mux.Router {
 		   Wrapping Permission check handler if permission not empty.
 		*/
 		if len(route.Permissions) > 0 {
-            if config.GetFEConfig().Common.Debug {
-                l4g.Debug("NewRouter: installing route " + route.Method + " " + route.Pattern+ ": Permission handler wrapped ")
-            }
+			if config.GetFEConfig().Common.Debug {
+				l4g.Debug("NewRouter: installing route " + route.Method + " " + route.Pattern + ": Permission handler wrapped ")
+			}
 			handler = handlers_common.PermChecker(handler, route.Permissions)
 		}
 
@@ -64,9 +60,9 @@ func NewRouter(max_req_config int, max_mem_percentage int) *mux.Router {
 		   Wrapping Credential check only for the routes that require it.
 		*/
 		if route.CredChecker != nil {
-            if config.GetFEConfig().Common.Debug {
-                l4g.Debug("NewRouter: installing route " + route.Method + " " + route.Pattern+ ": CredChecker '%+v' handler wrapped ",route.CredChecker)
-            }
+			if config.GetFEConfig().Common.Debug {
+				l4g.Debug("NewRouter: installing route "+route.Method+" "+route.Pattern+": CredChecker '%+v' handler wrapped ", route.CredChecker)
+			}
 			handler = route.CredChecker(handler, aud_list)
 		}
 
@@ -80,24 +76,24 @@ func NewRouter(max_req_config int, max_mem_percentage int) *mux.Router {
 			/*
 			   Accumulating performance statistics/counters for Centreon monitoring
 			*/
-            if config.GetFEConfig().Common.Debug {
-                l4g.Debug("NewRouter: installing route " + route.Method + " " + route.Pattern+ ": Global Perf handler wrapped ")
-            }
+			if config.GetFEConfig().Common.Debug {
+				l4g.Debug("NewRouter: installing route " + route.Method + " " + route.Pattern + ": Global Perf handler wrapped ")
+			}
 			handler = handlers_common.HTTPStats(handler, route.Method, route.Pattern)
 		}
 
-        /*
-            Cors handler chaining should be done AFTER credential checks because 
-            we want to generate the CORS headers even if the authentication fails. 
-            We want CORS sensitive client being able to receive 401 or 403 responses
-            with proper CORS headers.
-        */
-        if route.Cors {
-            if config.GetFEConfig().Common.Debug {
-                l4g.Debug("NewRouter: installing route " + route.Method + " " + route.Pattern+ ": Cors handler wrapped ")
-            }
-            handler = handlers_common.Allow_Cors_Json_Response_Handler(handler)
-        }
+		/*
+		   Cors handler chaining should be done AFTER credential checks because
+		   we want to generate the CORS headers even if the authentication fails.
+		   We want CORS sensitive client being able to receive 401 or 403 responses
+		   with proper CORS headers.
+		*/
+		if route.Cors {
+			if config.GetFEConfig().Common.Debug {
+				l4g.Debug("NewRouter: installing route " + route.Method + " " + route.Pattern + ": Cors handler wrapped ")
+			}
+			handler = handlers_common.Allow_Cors_Json_Response_Handler(handler)
+		}
 
 		/*
 		   Single Request Trail feature request to assign a unique ID to each incoming request.
@@ -111,27 +107,27 @@ func NewRouter(max_req_config int, max_mem_percentage int) *mux.Router {
 		/*
 		   Wrapping handler with execution timeout to limit resource consumption of micro service.
 		*/
-        /*
-           /!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\
-           Bug 129368 - [PROD] The FE process crashes randomly after some running time
-           
-           We found that we cannot use the timeout handler of the standard library if our 
-           handler implementation hasn't been implementated to collaborate with it in order 
-           to detect the abort/timeout signal. So such mechanism cannot be used without heavy
-           modifications of all of our handlers. 
+		/*
+		           /!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\
+		           Bug 129368 - [PROD] The FE process crashes randomly after some running time
 
-           NOTE: We mistakenly believed that a preemptive like implementation would suffice
-                 but we were wrong.
+		           We found that we cannot use the timeout handler of the standard library if our
+		           handler implementation hasn't been implementated to collaborate with it in order
+		           to detect the abort/timeout signal. So such mechanism cannot be used without heavy
+		           modifications of all of our handlers.
 
-		if route.ExecTimeout!=nil { 
-			l4g.Debug("HandlerWithTimeout: %s %s: using timeout of %v from config.",route.Method,route.Pattern,*route.ExecTimeout)
-			handler = handlers_common.HandlerWithTimeout(handler, *route.ExecTimeout)
-		} else {
-			l4g.Debug("HandlerWithTimeout: %s %s: using timeout of %v from config.",route.Method,route.Pattern,config.GetFEConfig().FrontLayer.ExecTimeout.GetDuration())
-			handler = handlers_common.HandlerWithTimeout(handler, config.GetFEConfig().FrontLayer.ExecTimeout.GetDuration())
-		}
-           /!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\
-        */
+		           NOTE: We mistakenly believed that a preemptive like implementation would suffice
+		                 but we were wrong.
+
+				if route.ExecTimeout!=nil {
+					l4g.Debug("HandlerWithTimeout: %s %s: using timeout of %v from config.",route.Method,route.Pattern,*route.ExecTimeout)
+					handler = handlers_common.HandlerWithTimeout(handler, *route.ExecTimeout)
+				} else {
+					l4g.Debug("HandlerWithTimeout: %s %s: using timeout of %v from config.",route.Method,route.Pattern,config.GetFEConfig().FrontLayer.ExecTimeout.GetDuration())
+					handler = handlers_common.HandlerWithTimeout(handler, config.GetFEConfig().FrontLayer.ExecTimeout.GetDuration())
+				}
+		           /!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\
+		*/
 
 		if config.GetFEConfig().Common.Debug {
 			l4g.Debug("NewRouter: installing route " + route.Method + " " + route.Pattern)

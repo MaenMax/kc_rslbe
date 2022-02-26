@@ -2,6 +2,7 @@ GOPATH:=$(shell pwd)
 MICROSERVICE=$(shell basename $(GOPATH))
 GO:=go
 GOFLAGS:=-v -p 1
+RAML2HTML:=$(shell which raml2html)
 
 ifeq ($(GOARCH),arm64)
 DOCKER_TAG=${GOARCH}
@@ -97,8 +98,8 @@ ci-container: ${VERSION_DOCKER}
 	@sh -c 'tiller_json=`cat bom.json` tiller -b . -n'
 
 doc: bin/gen_doc
-	sh -c './bin/gen_doc'
-	sh -c 'raml2html kaicloud.raml > ${MICROSERVICE}.html'
+	./bin/gen_doc -out $(MICROSERVICE).raml $(MICROSERVICE) 
+	$(RAML2HTML) $(MICROSERVICE).raml > ${MICROSERVICE}.html
 
 test:
 	@GO_MODULE_NAME=`head -1 go.mod | awk '{ print $$2 }'`; for path_to_test in `find . -type d -print`; do  { ls >/dev/null 2>&1 -al $${path_to_test}/*.go || continue ; };  path_to_test=`echo $${path_to_test} | sed 's/^.\///g'`; go_path=$${GO_MODULE_NAME}/$${path_to_test}; ${GO} test $${go_path}; done

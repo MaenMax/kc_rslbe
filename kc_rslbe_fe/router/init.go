@@ -5,13 +5,13 @@ import (
 	"git.kaiostech.com/cloud/common/utils/handlers_common"
 )
 
-var routes handlers_common.T_Routes
-
 var (
-	DEFAULT_EP []string
-	LBS_EP     []string
-	FXPUSH_EP  []string
-	STORAGE_EP []string
+	DEFAULT_EP  []string
+	LBS_EP      []string
+	FXPUSH_EP   []string
+	STORAGE_EP  []string
+	_all_routes handlers_common.T_Routes
+	_app_routes handlers_common.T_Routes
 )
 
 func Init() {
@@ -23,8 +23,17 @@ func Init() {
 
 	handlers_common.Init_Cors_Domains()
 
-    init_rslbe()
+	_app_routes = init_rslbe()
 
-	init_centreon()
-	init_profiling()
+	_all_routes = init_rslbe()
+	_all_routes = append(_all_routes, init_centreon()...)
+	_all_routes = append(_all_routes, init_profiling()...)
+}
+
+func Routes() handlers_common.T_Routes {
+	return _all_routes
+}
+
+func AppRoutes() handlers_common.T_Routes {
+	return _app_routes
 }

@@ -5,7 +5,7 @@ import (
 	"git.kaiostech.com/cloud/kc_rslbe/kc_rslbe_fe/handlers"
 )
 
-func init_rslbe() {
+func init_rslbe() (routes handlers_common.T_Routes) {
 
 	routes = append(routes, handlers_common.T_Route{
 		Name:          "Generic creation",
@@ -23,4 +23,5 @@ func init_rslbe() {
 		TC:            nil,
 	})
 
+	return
 }
