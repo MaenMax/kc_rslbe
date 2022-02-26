@@ -1,5 +1,5 @@
 GOPATH:=$(shell pwd)
-MICROSERVICE:=kc_rslbe
+MICROSERVICE=$(shell basename $(GOPATH))
 GO:=go
 GOFLAGS:=-v -p 1
 
