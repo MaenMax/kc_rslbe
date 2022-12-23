@@ -1,0 +1,266 @@
+openapi: 3.0.0
+swagger: 2.0
+info:
+  version: 1.0.0
+  title: Remote Sim Lock API
+  description: |
+   **Implementation of the Remote Sim Lock APIs**
+  
+   **Vibe project documentation (including RSL) can be found using the following links:**
+  
+    
+    **1- DRAFT-RSL sequence flows pictures source ZY-20220225.docx**
+    
+    * https://kaios.sharepoint.com/:w:/r/sites/vibe/Shared%20Documents/4.%20PRODUCT/06%20-%20RSL%20REQ%20and%20Designing/DRAFT-RSL%20sequence%20flows%20pictures%20source%20ZY-20220225.docx?d=w8cba978f89bc4cac8460d87c0e1053ba&csf=1&web=1&e=iQp9Eo *
+    
+    This document includes squence diagrams which describe the use cases: “device initiate” , “daily ping”, and “user change SIM to another one”. 
+
+    **2- DRAFT-Vibe Remote SIM Lock Operation Structure-20220307.docx**
+    
+    * https://kaios.sharepoint.com/:w:/r/sites/vibe/Shared%20Documents/4.%20PRODUCT/06%20-%20RSL%20REQ%20and%20Designing/DRAFT-Vibe%20Remote%20SIM%20Lock%20Operation%20Structure-20220307.docx?d=w51d49ceb6ddc4329aaa18ce02ce22318&csf=1&web=1&e=orUFfm
+    
+    This is a short document which includes an introduction to the RSL operation structure, and RSL portal.
+    
+    **3- RSL flow charts for communicate.v0.2.docx**
+    
+    * https://kaios.sharepoint.com/:w:/r/sites/vibe/Shared%20Documents/4.%20PRODUCT/06%20-%20RSL%20REQ%20and%20Designing/RSL%20flow%20charts%20for%20communicate.v0.2.docx?d=w8215af326530486ab8b84b14e3208967&csf=1&web=1&e=H2DhdF
+    
+    **4- Vibe RSL Technical Keypoints.20220915.pptx**
+    
+    * https://kaios.sharepoint.com/:p:/r/sites/vibe/Shared%20Documents/4.%20PRODUCT/06%20-%20RSL%20REQ%20and%20Designing/Vibe%20RSL%20Technical%20Keypoints%20.20220915.pptx?d=w58603c5ed4814c9086a799450262b97e&csf=1&web=1&e=czrBNc
+    
+    **5- Vibe Product requirement_211118.pptx**
+    
+    * https://kaios-my.sharepoint.com/:p:/r/personal/raffi_semerciyan_kaiostech_com/Documents/Documents/20211124-Vibe/Vibe%20Product%20Requirement_211118.pptx?d=w130eb4dd2a74481d93cb1fec26c0d068&csf=1&web=1&e=ivj2jW
+    
+    **6- Vibe-Requirements-Analysis.docx**
+    
+    * https://kaios-my.sharepoint.com/:w:/g/personal/raffi_semerciyan_kaiostech_com/EXlVgqdcF7pAii8-VIHeRXQB_VQEBIbjO_2aU3Ur_Rqk1w?e=R7eaOb
+
+      This document shows the detailed design of RSL function, after making a requirement summary.
+      
+    **7- Vibe-Specification.docx**
+    
+   * https://kaios-my.sharepoint.com/:w:/g/personal/raffi_semerciyan_kaiostech_com/EXlVgqdcF7pAii8-VIHeRXQB_VQEBIbjO_2aU3Ur_Rqk1w?e=R7eaOb
+    
+    This document shows the detailed use case diagrams which show the interaction between Vive users and the system.
+  termsOfService: https://kaiostech.com/terms-of-use
+  contact:
+    name: Maen Abu Hammour
+    email: maen.hammour@kaiostech.com
+servers: 
+    - url: https://dev.kaiostech.com
+      description: Dev server
+  
+    - url: https://test.kaiostech.com
+      description: Test server
+   
+    - url: https://kaiostech.com
+      description: Prod server
+      
+paths:
+  /kc_rsl_fe/v1.0/devices/register:
+    post:
+      description: Registers the 3i data of the device and then assiciates the device with an operator. Each operator will have a list of devices associated with it, and this API will be able to match the operator with the IMEI using this pre-exisiting list.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                imei:
+                  type: string
+                  example: 490154203237518
+                imsi:
+                  type: string
+                  example: 123456789101112
+                isdn:
+                  type: string
+                  example: some-isdn
+                  
+      responses:
+        201: 
+          description: Successfully registers the device and associates it with an operator.
+        400:
+          description: One of the 3i data is of a wrong format.
+        500:
+          description: Internal server error while registering the 3i data of the device.
+        401:
+          description: Action is not authorized.         
+      content:
+        application/json:
+          schema:
+            properties:
+              imei:
+                type: string
+                description: Unique identifier of device
+                example: 490154203237518
+              imsi:
+                type: string
+                description: Unique identifier of the SIM card
+                example: 123456789101112
+                    
+              isdn:
+                description: Phone number of user
+                example: 
+              partner_id:
+                description: Partner/operator ID
+
+
+  /kc_rsl_be/v1.0/partners/{id}/3is:
+   post:
+      description: Registers the 3i data of the device and then assiciates the device with an operator. Each operator will have a list of devices associated with it, and this API will be able to match the operator with the IMEI using this pre-exisiting list.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                imei:
+                  type: string
+                  example: 490154203237518
+                imsi:
+                  type: string
+                  example: 123456789101112
+                isdn:
+                  type: string
+                  example: some-isdn
+                  
+      responses:
+        201: 
+          description: Successfully registers the device and associates it with an operator.
+        400:
+          description: One of the 3i data is of a wrong format.
+        500:
+          description: Internal server error while registering the 3i data of the device.
+        401:
+          description: Action is not authorized.         
+      content:
+        application/json:
+          schema:
+            properties:
+              imei:
+                type: string
+                description: Unique identifier of device
+                example: 490154203237518
+              imsi:
+                type: string
+                description: Unique identifier of the SIM card
+                example: 123456789101112
+                    
+              isdn:
+                description: Phone number of user
+                example: 
+              partner_id:
+                description: Partner/operator ID
+ 
+                  
+  /kc_rsl_be/v1.0/devices/rsl/{imei}:
+   post:
+     description: Sends a Remote Sim Lock command to the device ID (IMEI) specified in the route.
+     responses:
+       201:
+        description: Successfully send a remote SIM LOCK command to the device.
+       401:
+        description: Action was unauthorized due to wrong authentication information. Example, this IMEI does not belong to the operator which is trying to send the command.
+       404:
+        description: Device IMEI was not found
+       400:
+        description: The IMEI provided is of a wrong format
+       500:
+        descripton: Internal server error while sending a remote SIM LOCK command to the device.
+        
+        
+  /kc_rsl_be/v1.0/devices/unleash/{imei}:
+    post:
+
+     description: Sends a remote device unleash command. This will unlock the device from the carrier/operator, and the device will be free to be used with any other operator. Once command is received, the device will no longer need to keep syncing with VIBE backend.
+     responses:
+       201:
+        description: Successfully send a remote unleash command to the device.
+       404:
+        description: Device IMEI was not found
+       401:
+        description: Action was unauthorized due to wrong authentication information. Example, this IMEI does not belong to the operator which is trying to send the command.
+       400:
+        description: The IMEI provided is of a wrong format
+       500:
+        description:  Internal server error while sending a remote SIM LOCK command to the device.
+        
+  /kc_rsl_be/v1.0/devices/update/{imei}:
+     put:
+      description: Updates the 2i data of a given device
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                imsi:
+                  type: string
+                  example: 123456789101112
+                isdn:
+                  type: string
+                  example: some-isdn
+      responses:
+        201: 
+          description: Successfully registers the device and associates it with an operator.
+        400:
+          description: One of the 3i data is of a wrong format.
+        500:
+          description: Internal server error while registering the 3i data of the device.
+        401:
+          description: Action is not authorized.
+            
+      content:
+        application/json:
+          schema:
+            properties:
+              imei:
+                type: string
+                description: Unique identifier of device
+                example: 490154203237518
+              imsi:
+                type: string
+                description: Unique identifier of the SIM card
+                example: 123456789101112
+                    
+              isdn:
+                description: Phone number of user
+                example: 
+              partner_id:
+                description: Partner/operator ID
+                
+                
+  /kc_rsl_be/v1.0/devices/transfer_ownership/{imei}/{partner_id}:
+    post:
+      description: Transfers the ownership of a device/imei between partners. This action is allowed only by super admin to correct any mistake done by operator.
+      responses:
+        201: 
+          description: Successfully transferred the ownership of a device/imei to the target operator.
+        404:
+          description: This IMEI does not belong to this operator. OR the operator does not exist.
+        400:
+          description: Wrong formatted IMEI or operator ID
+        500:
+          description: Internal server error while transferring the ownership of the device.
+        401:
+          description: Action is not authorized. Must be SUPER admin.
+          
+  /kc_rsl_be/v1.0/devices/transfer_state/{imei}/{partner_id}:
+    post:
+      description: Transfers the the state of a particular IMEI to another IMEI. This is required when the old device has to be replaced with another device. In such case the new device should receive the status of the old device in order to maintain its progress towards the unleash stage.
+      responses:
+        201: 
+          description: Successfully transferred the status of the old device to the new device.
+        404:
+          description: This IMEI does not belong to this operator. OR the operator does not exist.
+        400:
+          description: Wrong formatted IMEI or operator ID
+        500:
+          description: Internal server error while transferring the ownership of the device.
+        401:
+          description: Action is not authorized. Must be SUPER admin.

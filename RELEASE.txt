@@ -1,6 +1,0 @@
-2022/02/25 15:45 Raffi v0.0.0
-  * Creation of the project.
-  * DB Changes: None
-  * Config changes: None
-  * Key File Changes: None
-  * HAProxy Changes: None
