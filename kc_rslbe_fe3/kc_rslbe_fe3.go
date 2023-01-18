@@ -225,7 +225,7 @@ func load_cypher_suites(conf *config.FEConfig) error {
 
 var (
 	opt_version *bool   = flag.Bool("version", false, "Display current tool version and exit.")
-	config_file *string = flag.String("config", "conf/kc_fin_fe.conf", "Config file to use.")
+	config_file *string = flag.String("config", "conf/kc_rslbe_fe3.conf", "Config file to use.")
 	log_file    *string = flag.String("log", "conf/kc_rslbe_fe3_log.xml", "Log L4G config file to use.")
 	key_file    *string = flag.String("key_file", "keys.json", "Keys used to boostrap fe node.")
 
@@ -379,8 +379,8 @@ func stop_servers(conf *config.FEConfig) {
 }
 
 /*
-   This function may start 2 servers: one with HTTP and one with HTTPS depending
-   on the provided configuration. Eventually, HTTP may be redirected to HTTPS.
+This function may start 2 servers: one with HTTP and one with HTTPS depending
+on the provided configuration. Eventually, HTTP may be redirected to HTTPS.
 */
 func start_servers(conf *config.FEConfig) chan error {
 

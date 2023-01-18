@@ -3,7 +3,7 @@ module git.kaiostech.com/cloud/kc_rslbe
 go 1.16
 
 require (
-	git.kaiostech.com/cloud/common v1.16.7
+	git.kaiostech.com/cloud/common v1.16.8
 	git.kaiostech.com/cloud/kc_fin_fe v1.3.25
 	git.kaiostech.com/cloud/thirdparty v1.5.1 // indirect
 	github.com/cpuguy83/go-md2man v1.0.10 // indirect
@@ -13,3 +13,5 @@ require (
 	github.com/peterh/liner v0.0.0-20170317030525-88609521dc4b // indirect
 	go.etcd.io/etcd/client/v3 v3.5.6 // indirect
 )
+
+replace git.kaiostech.com/cloud/common => ../common

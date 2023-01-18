@@ -5,6 +5,10 @@ GO:=go
 GOFLAGS:=-v -p 1
 
 
+KC_COMMON_JAR_VERSION:=$(shell bin/extract_kc_common_version_from_pom.sh kc_rslbe_dl3/pom.xml)
+KC_COMMON_JAR:=${HOME}/.m2/repository/com/kaiostech/kc_common/${KC_COMMON_JAR_VERSION}/kc_common-${KC_COMMON_JAR_VERSION}.jar
+
+
 CLOUD_TARGETS:= bin/${MICROSERVICE_BIN}_fe3 
 
 

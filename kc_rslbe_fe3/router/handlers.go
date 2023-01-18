@@ -10,14 +10,87 @@
 package router
 
 import (
+	"fmt"
 	"net/http"
+
+	"git.kaiostech.com/cloud/common/cerrors"
+	"git.kaiostech.com/cloud/common/config"
+	"git.kaiostech.com/cloud/common/model/vibe/vibe_v1_0"
+	"git.kaiostech.com/cloud/common/mq"
+	"git.kaiostech.com/cloud/common/security/jwttoken"
+	"git.kaiostech.com/cloud/common/utils/context"
+	"git.kaiostech.com/cloud/common/utils/handlers_common"
+	l4g "git.kaiostech.com/cloud/thirdparty/code.google.com/p/log4go"
+	"github.com/gorilla/mux"
 )
 
 func VibeBeDevicesRegisterPost(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
-}
+	if config.GetFEConfig().Common.Debug {
+		l4g.Debug("req #%v: handlers: VibeBeDevicesRegisterPost starts", context.GetReqId(r))
+		defer l4g.Debug("req #%v: handlers:VibeBeDevicesRegisterPost ends", context.GetReqId(r))
+	}
+	// Getting the IMEI from the request and hashing IMEI to find device ID
+	vars := mux.Vars(r)
+	partnerID := vars["id"]
 
+	body := context.GetPayload(r)
+
+	if len(body) == 0 {
+		cerr := cerrors.New(cerrors.ERROR_MALFORMED_POST_DATA, "No data found in request payload", "FE", true)
+		l4g.Error("req #%v: handlers: VibeBeDevicesRegisterPost: '%s'", context.GetReqId(r), cerr.Cause)
+		handlers_common.RespondError(r, w, cerr)
+		return
+	}
+	var err error
+
+	device_info, err := vibe_v1_0.JsonToDeviceInfo(body)
+	if err != nil {
+		cerr := cerrors.New(cerrors.ERROR_MALFORMED_POST_DATA, fmt.Sprintf("unmarshal failed: '%s'", err.Error()), "FE", true)
+		l4g.Error("req #%v: handlers: VibeBeDevicesRegisterPost: Error while unmarshalling body data: '%s'. offending payload: '%s'", context.GetReqId(r), err.Error(), body)
+		handlers_common.RespondError(r, w, cerr)
+		return
+	}
+
+	if err := device_info.SelfCheck(); err != nil {
+		cerr := cerrors.New(cerrors.ERROR_INVALID_REQUEST, fmt.Sprintf("selfcheck failed: '%s'", err.Error()), "FE", true)
+		l4g.Error("req #%v: handlers: VibeBeDevicesRegisterPost: Error in object data SelfCheck: '%s'.", context.GetReqId(r), err.Error())
+		handlers_common.RespondError(r, w, cerr)
+		return
+	}
+
+	jwt_claims_str := context.GetClaims(r)
+	if jwt_claims_str == "" {
+		cerr := cerrors.New(cerrors.ERROR_INVALID_REQUEST, "Failed to recover Token Claims from Context!", "FE", true)
+		l4g.Error("req #%v: handlers: VibeBeDevicesRegisterPost: %s", context.GetReqId(r), cerr.Cause)
+		handlers_common.RespondError(r, w, cerr)
+		return
+	}
+
+	var jwt_claims jwttoken.Claims
+
+	if jwt_claims, err = jwttoken.ParseClaims(jwt_claims_str); err != nil {
+		cerr := cerrors.New(cerrors.ERROR_INVALID_REQUEST, fmt.Sprintf("Failed to parse Token Claims: '%s'!", err), "FE", true)
+		l4g.Error("req #%v: handlers: VibeBeDevicesRegisterPost: Failed to parse claims: %s. Claims content: '%s'", context.GetReqId(r), err.Error(), jwt_claims)
+		handlers_common.RespondError(r, w, cerr)
+		return
+	}
+	// Sending to Messaging Queue for request processing
+	request := mq.NewMQRequest(partnerID, mq.MQRT_CREATE, mq.MQSCOPE_RSL_BE_REGISTER_3I, context.GetReqId(r), mq.NewReqInfo(r))
+
+	//Set body of the request
+	if err = request.SetData(body); err != nil {
+		cerr := cerrors.New(cerrors.ERROR_INTERNAL_SERVER_ERROR, fmt.Sprintf("Failed to set request data: '%s'", err.Error()), "FE", true)
+		l4g.Error("req #%v: handlers: VibeBeDevicesRegisterPost: Failed to set request data: '%s'.", context.GetReqId(r), err.Error())
+		handlers_common.RespondError(r, w, cerr)
+		return
+	}
+	response, cerr := handlers_common.MQSendRecv(request)
+	if cerr != nil {
+		handlers_common.RespondError(r, w, cerr)
+	}
+	handlers_common.HTTPFeedbackGetResult(r, w, fmt.Sprintf("/kc_rsl_be/v1.0/partners/%s/3i", partnerID), response, nil)
+	return
+}
 func VibeBeDevicesRslImeiPost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
