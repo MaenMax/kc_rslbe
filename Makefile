@@ -14,13 +14,12 @@ KC_COMMON_JAR_VERSION:=$(shell bin/extract_kc_common_version_from_pom.sh kc_rslb
 KC_COMMON_JAR:=${HOME}/.m2/repository/com/kaiostech/kc_common/${KC_COMMON_JAR_VERSION}/kc_common-${KC_COMMON_JAR_VERSION}.jar
 
 CLOUD_TARGETS:=bin/${MICROSERVICE}_ll3 bin/${MICROSERVICE}_fe3
-TOOL_TARGETS:=bin/gen_doc
+
 
 VERSION_DOCKER=$(shell echo -e "{\n    \"${MICROSERVICE}\" : {\n    \"docker_tag\" : \"${DOCKER_TAG}\",\n    \"arch\" : \"${GOARCH}\",\n    \"version\" : \"$$(cat .version)\",\n    \"tag\":\""$$(cat .version)"\"\n  }\n}" > bom.json)
 GITREF:=$(shell if [ -d .git ]; then git describe --tags --abbrev=9; else echo "none"; fi)
 
-default: githook ${MICROSERVICE}_dl3 ${CLOUD_TARGETS} ${TOOL_TARGETS}
-
+default: githook ${MICROSERVICE}_dl3 ${CLOUD_TARGETS} 
 .PHONY: ${MICROSERVICE}_dl3 ${MICROSERVICE}_ll3 ${MICROSERVICE}_fe3 utils
 
 all: githook clean default
@@ -70,9 +69,6 @@ ${KC_COMMON_JAR}: kc_rslbe_dl3/pom.xml
 	sh -c "./bin/gen_kc_common.sh ${KC_COMMON_JAR_VERSION}"
 
 
-bin/gen_doc: utils/version/version.go
-	@echo "========== Compiling $@ =========="
-	@sh -c 'binary_name=`basename $@`;  echo $(GO) build $(GOFLAGS) -o $@ git.kaiostech.com/cloud/${MICROSERVICE}/utils/$${binary_name} && $(GO) build $(GOFLAGS) -o $@ git.kaiostech.com/cloud/${MICROSERVICE}/utils/$${binary_name}'
 
 
 deploy: clean ${MICROSERVICE}_dl3 ${CLOUD_TARGETS} ${KC_COMMON_JAR}
@@ -85,9 +81,6 @@ docker: ${VERSION_DOCKER}
 ci-container: ${VERSION_DOCKER}
 	@sh -c 'tiller_json=`cat bom.json` tiller -b . -n'
 
-doc: bin/gen_doc
-	sh -c './bin/gen_doc'
-	sh -c 'raml2html kaicloud.raml > ${MICROSERVICE}.html'
 
 test:
 	@echo "Testing ${MICROSERVICE}_fe3 ..." && find ${MICROSERVICE}_fe3 -type d -exec go test git.kaiostech.com/cloud/${MICROSERVICE}/{} \;
@@ -96,7 +89,7 @@ test:
 
 clean:
 	cd ${MICROSERVICE}_dl3 && make clean
-	@echo "Deleting generated binary files ..."; for binary in ${CLOUD_TARGETS} ${TOOL_TARGETS} ; do if [ -f "$${binary}" ]; then rm -f $${binary} && echo $${binary}; fi; done
+	@echo "Deleting generated binary files ..."; for binary in ${CLOUD_TARGETS}  ; do if [ -f "$${binary}" ]; then rm -f $${binary} && echo $${binary}; fi; done
 	@echo "Deleting generated version files ..."; for version_dir in ${MICROSERVICE}_ll3/version ${MICROSERVICE}_fe3/version utils/version; do if [ -d "$${version_dir}" ]; then rm -Rf $${version_dir} && echo $${version_dir}; fi; done
 	@echo "Deleting generated bom.json file ..." && rm -f bom.json
 	@echo "Deleting emacs backup files ..."; find . -type f -name \*~ -exec rm {} \; -print

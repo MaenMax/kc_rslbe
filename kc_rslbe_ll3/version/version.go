@@ -6,9 +6,9 @@ import (
 )
 
 var (
-	VERSION        string = "1.3.25"
-	BUILDID        string = "f9dccc9852aa9c39c9180e0dc287a6fae717b2fc-20230118051851"
-	DATE           string = "Wed Jan 18 05:18:51 PST 2023"
+	VERSION        string = "1.0.0"
+	BUILDID        string = "82b5b88e9fdb141cad06637dcd334c93cf1e4c22-20230118063902"
+	DATE           string = "Wed Jan 18 06:39:02 PST 2023"
 	BUILDER        string = "maen"
 	HOSTNAME       string = "ConnectON"
 	KERNEL_VERSION string = "Linux ConnectON 3.10.0-1160.81.1.el7.x86_64 #1 SMP Fri Dec 16 17:29:43 UTC 2022 x86_64 x86_64 x86_64 GNU/Linux"

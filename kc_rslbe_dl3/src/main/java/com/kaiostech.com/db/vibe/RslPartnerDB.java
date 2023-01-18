@@ -1,4 +1,4 @@
-package main.java.com.kaiostech.com.db.vibe;
+package com.kaiostech.com.db.vibe;
 
 import com.datastax.driver.core.Row;
 import com.kaiostech.cerrors.CError;
@@ -12,25 +12,25 @@ import java.util.TreeMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class FinPartnerDB {
+public class RslPartnerDB {
   private static final String FIN_PARTNER_TABLE_NAME = "fin_partner";
-  private static Logger _logger = LogManager.getLogger(FinPartnerDB.class);
+  private static Logger _logger = LogManager.getLogger(RslPartnerDB.class);
   private INoSqlDB_C _nosqldb;
-  private static FinPartnerDB _finPartnerDB;
+  private static RslPartnerDB _RslPartnerDB;
 
   private String EMAIL_D_COLUMN_NAME = "email_domain";
   private String FID_COLUMN_NAME = "fid";
 
   static {
     INoSqlDB_C nosqldb = NoSqlDBFactory_C.getDefault();
-    _finPartnerDB = new FinPartnerDB(nosqldb);
+    _RslPartnerDB = new RslPartnerDB(nosqldb);
   }
 
-  public static FinPartnerDB getInstance() {
-    return _finPartnerDB;
+  public static RslPartnerDB getInstance() {
+    return _RslPartnerDB;
   }
 
-  public FinPartnerDB(INoSqlDB_C nosqldb) {
+  public RslPartnerDB(INoSqlDB_C nosqldb) {
     this._nosqldb = nosqldb;
   }
 
