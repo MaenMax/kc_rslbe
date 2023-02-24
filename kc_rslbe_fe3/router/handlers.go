@@ -10,6 +10,7 @@
 package router
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -21,7 +22,7 @@ import (
 	"git.kaiostech.com/cloud/common/utils/context"
 	"git.kaiostech.com/cloud/common/utils/handlers_common"
 	l4g "git.kaiostech.com/cloud/thirdparty/code.google.com/p/log4go"
-	"github.com/gorilla/mux"
+	"git.kaiostech.com/cloud/thirdparty/github.com/gorilla/mux"
 )
 
 func VibeBeDevicesRegisterPost(w http.ResponseWriter, r *http.Request) {
@@ -29,11 +30,14 @@ func VibeBeDevicesRegisterPost(w http.ResponseWriter, r *http.Request) {
 		l4g.Debug("req #%v: handlers: VibeBeDevicesRegisterPost starts", context.GetReqId(r))
 		defer l4g.Debug("req #%v: handlers:VibeBeDevicesRegisterPost ends", context.GetReqId(r))
 	}
-	// Getting the IMEI from the request and hashing IMEI to find device ID
+	// Getting partner ID form the route.
 	vars := mux.Vars(r)
 	partnerID := vars["id"]
 
 	body := context.GetPayload(r)
+
+	l4g.Debug("req #%v: handlers: VibeBeDevicesRegisterPost: Received request body: %s", context.GetReqId(r), body)
+	l4g.Debug("req #%v: handlers: VibeBeDevicesRegisterPost: Received partner ID in the request: %s", context.GetReqId(r), partnerID)
 
 	if len(body) == 0 {
 		cerr := cerrors.New(cerrors.ERROR_MALFORMED_POST_DATA, "No data found in request payload", "FE", true)
@@ -74,6 +78,7 @@ func VibeBeDevicesRegisterPost(w http.ResponseWriter, r *http.Request) {
 		handlers_common.RespondError(r, w, cerr)
 		return
 	}
+
 	// Sending to Messaging Queue for request processing
 	request := mq.NewMQRequest(partnerID, mq.MQRT_CREATE, mq.MQSCOPE_RSL_BE_REGISTER_3I, context.GetReqId(r), mq.NewReqInfo(r))
 
@@ -88,30 +93,253 @@ func VibeBeDevicesRegisterPost(w http.ResponseWriter, r *http.Request) {
 	if cerr != nil {
 		handlers_common.RespondError(r, w, cerr)
 	}
+	if response == nil {
+		cerr := cerrors.New(cerrors.ERROR_INTERNAL_SERVER_ERROR, "Received nil response from LL", "FE", true)
+		l4g.Error("req #%v: handlers: VibeBeDevicesRegisterPost: Received nil response from LL", context.GetReqId(r))
+		handlers_common.RespondError(r, w, cerr)
+		return
+	}
+	w.WriteHeader(http.StatusCreated)
 	handlers_common.HTTPFeedbackGetResult(r, w, fmt.Sprintf("/kc_rsl_be/v1.0/partners/%s/3i", partnerID), response, nil)
 	return
 }
 func VibeBeDevicesRslImeiPost(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
+	if config.GetFEConfig().Common.Debug {
+		l4g.Debug("req #%v: handlers: VibeBeDevicesRslImeiPost starts", context.GetReqId(r))
+		defer l4g.Debug("req #%v: handlers:VibeBeDevicesRslImeiPost ends", context.GetReqId(r))
+	}
+
+	var err error
+	// Getting the IMEI from the request
+	vars := mux.Vars(r)
+	imei := vars["imei"]
+
+	jwt_claims_str := context.GetClaims(r)
+	if jwt_claims_str == "" {
+		cerr := cerrors.New(cerrors.ERROR_INVALID_REQUEST, "Failed to recover Token Claims from Context!", "FE", true)
+		l4g.Error("req #%v: handlers: VibeBeDevicesRslImeiPost: %s", context.GetReqId(r), cerr.Cause)
+		handlers_common.RespondError(r, w, cerr)
+		return
+	}
+
+	var jwt_claims jwttoken.Claims
+
+	if jwt_claims, err = jwttoken.ParseClaims(jwt_claims_str); err != nil {
+		cerr := cerrors.New(cerrors.ERROR_INVALID_REQUEST, fmt.Sprintf("Failed to parse Token Claims: '%s'!", err), "FE", true)
+		l4g.Error("req #%v: handlers: VibeBeDevicesRslImeiPost: Failed to parse claims: %s. Claims content: '%s'", context.GetReqId(r), err.Error(), jwt_claims)
+		handlers_common.RespondError(r, w, cerr)
+		return
+	}
+	partnerID := jwt_claims.Get("pid")
+	// Sending to Messaging Queue for request processing
+	request := mq.NewMQRequest(fmt.Sprintf("%s:%s", partnerID, imei), mq.MQRT_CREATE, mq.MQSCOPE_RSL_BE_COMMAND, context.GetReqId(r), mq.NewReqInfo(r))
+
+	response, cerr := handlers_common.MQSendRecv(request)
+	if cerr != nil {
+		handlers_common.RespondError(r, w, cerr)
+	}
+	handlers_common.HTTPFeedbackGetResult(r, w, fmt.Sprintf("/kc_rsl_be/v1.0/devices/rsl/%s", imei), response, nil)
+	return
+
 }
 
 func VibeBeDevicesTransferOwnershipImeiPartnerIdPost(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
+	if config.GetFEConfig().Common.Debug {
+		l4g.Debug("req #%v: handlers: VibeBeDevicesTransferOwnershipImeiPartnerIdPost starts", context.GetReqId(r))
+		defer l4g.Debug("req #%v: handlers:VibeBeDevicesTransferOwnershipImeiPartnerIdPost ends", context.GetReqId(r))
+	}
+
+	var err error
+	// Getting the IMEI and partner_id from the request
+	vars := mux.Vars(r)
+	imei := vars["imei"]
+	partnerID := vars["partner_id"]
+
+	jwt_claims_str := context.GetClaims(r)
+	if jwt_claims_str == "" {
+		cerr := cerrors.New(cerrors.ERROR_INVALID_REQUEST, "Failed to recover Token Claims from Context!", "FE", true)
+		l4g.Error("req #%v: handlers: VibeBeDevicesTransferOwnershipImeiPartnerIdPost: %s", context.GetReqId(r), cerr.Cause)
+		handlers_common.RespondError(r, w, cerr)
+		return
+	}
+
+	var jwt_claims jwttoken.Claims
+
+	if jwt_claims, err = jwttoken.ParseClaims(jwt_claims_str); err != nil {
+		cerr := cerrors.New(cerrors.ERROR_INVALID_REQUEST, fmt.Sprintf("Failed to parse Token Claims: '%s'!", err), "FE", true)
+		l4g.Error("req #%v: handlers: VibeBeDevicesTransferOwnershipImeiPartnerIdPost: Failed to parse claims: %s. Claims content: '%s'", context.GetReqId(r), err.Error(), jwt_claims)
+		handlers_common.RespondError(r, w, cerr)
+		return
+	}
+	// Sending to Messaging Queue for request processing
+	request := mq.NewMQRequest(fmt.Sprintf("%s:%s", partnerID, imei), mq.MQRT_CREATE, mq.MQSCOPE_RSL_BE_TRANSFER_OWNERSHIP, context.GetReqId(r), mq.NewReqInfo(r))
+
+	response, cerr := handlers_common.MQSendRecv(request)
+	if cerr != nil {
+		handlers_common.RespondError(r, w, cerr)
+	}
+	handlers_common.HTTPFeedbackCreateResult(r, w, fmt.Sprintf("kc_rsl_be/v1.0/devices/transfer_ownership/%s/%s", imei, partnerID), response, nil)
+	return
 }
 
 func VibeBeDevicesTransferStateImeiPartnerIdPost(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
+	if config.GetFEConfig().Common.Debug {
+		l4g.Debug("req #%v: handlers: VibeBeDevicesTransferStateImeiPartnerIdPost starts", context.GetReqId(r))
+		defer l4g.Debug("req #%v: handlers:VibeBeDevicesTransferStateImeiPartnerIdPost ends", context.GetReqId(r))
+	}
+
+	var err error
+	// Getting both IMEIs from the request
+	vars := mux.Vars(r)
+	from_imei := vars["from_imei"]
+	to_imei := vars["to_imei"]
+
+	jwt_claims_str := context.GetClaims(r)
+	if jwt_claims_str == "" {
+		cerr := cerrors.New(cerrors.ERROR_INVALID_REQUEST, "Failed to recover Token Claims from Context!", "FE", true)
+		l4g.Error("req #%v: handlers: VibeBeDevicesTransferStateImeiPartnerIdPost: %s", context.GetReqId(r), cerr.Cause)
+		handlers_common.RespondError(r, w, cerr)
+		return
+	}
+
+	var jwt_claims jwttoken.Claims
+
+	if jwt_claims, err = jwttoken.ParseClaims(jwt_claims_str); err != nil {
+		cerr := cerrors.New(cerrors.ERROR_INVALID_REQUEST, fmt.Sprintf("Failed to parse Token Claims: '%s'!", err), "FE", true)
+		l4g.Error("req #%v: handlers: VibeBeDevicesTransferStateImeiPartnerIdPost: Failed to parse claims: %s. Claims content: '%s'", context.GetReqId(r), err.Error(), jwt_claims)
+		handlers_common.RespondError(r, w, cerr)
+		return
+	}
+
+	partnerID := jwt_claims.Get("pid")
+
+	// Sending to Messaging Queue for request processing
+	request := mq.NewMQRequest(fmt.Sprintf("%s:%s:%s", partnerID.(string), from_imei, to_imei), mq.MQRT_UPDATE, mq.MQSCOPE_RSL_BE_TRANSFER_STATE, context.GetReqId(r), mq.NewReqInfo(r))
+
+	response, cerr := handlers_common.MQSendRecv(request)
+	if cerr != nil {
+		handlers_common.RespondError(r, w, cerr)
+	}
+	handlers_common.HTTPFeedbackCreateResult(r, w, fmt.Sprintf("/kc_rsl_be/v1.0/devices/transfer_state/%s/%s", from_imei, to_imei), response, nil)
+	return
 }
 
 func VibeBeDevicesUnleashImeiPost(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
+	if config.GetFEConfig().Common.Debug {
+		l4g.Debug("req #%v: handlers: VibeBeDevicesUnleashImeiPost starts", context.GetReqId(r))
+		defer l4g.Debug("req #%v: handlers:VibeBeDevicesUnleashImeiPost ends", context.GetReqId(r))
+	}
+
+	var err error
+	// Getting both IMEI
+	vars := mux.Vars(r)
+	imei := vars["imei"]
+
+	jwt_claims_str := context.GetClaims(r)
+	if jwt_claims_str == "" {
+		cerr := cerrors.New(cerrors.ERROR_INVALID_REQUEST, "Failed to recover Token Claims from Context!", "FE", true)
+		l4g.Error("req #%v: handlers: VibeBeDevicesUnleashImeiPost: %s", context.GetReqId(r), cerr.Cause)
+		handlers_common.RespondError(r, w, cerr)
+		return
+	}
+
+	var jwt_claims jwttoken.Claims
+
+	if jwt_claims, err = jwttoken.ParseClaims(jwt_claims_str); err != nil {
+		cerr := cerrors.New(cerrors.ERROR_INVALID_REQUEST, fmt.Sprintf("Failed to parse Token Claims: '%s'!", err), "FE", true)
+		l4g.Error("req #%v: handlers: VibeBeDevicesUnleashImeiPost: Failed to parse claims: %s. Claims content: '%s'", context.GetReqId(r), err.Error(), jwt_claims)
+		handlers_common.RespondError(r, w, cerr)
+		return
+	}
+	// Sending to Messaging Queue for request processing
+	request := mq.NewMQRequest(imei, mq.MQRT_CREATE, mq.MQSCOPE_RSL_BE_UNLEASH, context.GetReqId(r), mq.NewReqInfo(r))
+
+	response, cerr := handlers_common.MQSendRecv(request)
+	if cerr != nil {
+		handlers_common.RespondError(r, w, cerr)
+	}
+	handlers_common.HTTPFeedbackCreateResult(r, w, fmt.Sprintf("/kc_rsl_be/v1.0/devices/unleash/%s", imei), response, nil)
+	return
 }
 
 func VibeBeDevicesUpdateImeiPut(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
+	if config.GetFEConfig().Common.Debug {
+		l4g.Debug("req #%v: handlers: VibeBeDevicesUpdateImeiPut starts", context.GetReqId(r))
+		defer l4g.Debug("req #%v: handlers:VibeBeDevicesUpdateImeiPut ends", context.GetReqId(r))
+	}
+
+	var err error
+	// Getting both IMEI
+	vars := mux.Vars(r)
+	imei := vars["imei"]
+
+	body := context.GetPayload(r)
+
+	if len(body) == 0 {
+		cerr := cerrors.New(cerrors.ERROR_MALFORMED_POST_DATA, "No data found in request payload", "FE", true)
+		l4g.Error("req #%v: handlers: VibeBeDevicesUpdateImeiPut: '%s'", context.GetReqId(r), cerr.Cause)
+		handlers_common.RespondError(r, w, cerr)
+		return
+	}
+
+	device_info, err := vibe_v1_0.JsonToDeviceInfo(body)
+	if err != nil {
+		cerr := cerrors.New(cerrors.ERROR_MALFORMED_POST_DATA, fmt.Sprintf("unmarshal failed: '%s'", err.Error()), "FE", true)
+		l4g.Error("req #%v: handlers: VibeBeDevicesUpdateImeiPut: Error while unmarshalling body data: '%s'. offending payload: '%s'", context.GetReqId(r), err.Error(), body)
+		handlers_common.RespondError(r, w, cerr)
+		return
+	}
+
+	device_info.Imei = imei
+
+	if err := device_info.SelfCheck(); err != nil {
+		cerr := cerrors.New(cerrors.ERROR_INVALID_REQUEST, fmt.Sprintf("selfcheck failed: '%s'", err.Error()), "FE", true)
+		l4g.Error("req #%v: handlers: VibeBeDevicesRegisterPost: Error in object data SelfCheck: '%s'.", context.GetReqId(r), err.Error())
+		handlers_common.RespondError(r, w, cerr)
+		return
+	}
+
+	jwt_claims_str := context.GetClaims(r)
+	if jwt_claims_str == "" {
+		cerr := cerrors.New(cerrors.ERROR_INVALID_REQUEST, "Failed to recover Token Claims from Context!", "FE", true)
+		l4g.Error("req #%v: handlers: VibeBeDevicesUpdateImeiPut: %s", context.GetReqId(r), cerr.Cause)
+		handlers_common.RespondError(r, w, cerr)
+		return
+	}
+
+	var jwt_claims jwttoken.Claims
+
+	if jwt_claims, err = jwttoken.ParseClaims(jwt_claims_str); err != nil {
+		cerr := cerrors.New(cerrors.ERROR_INVALID_REQUEST, fmt.Sprintf("Failed to parse Token Claims: '%s'!", err), "FE", true)
+		l4g.Error("req #%v: handlers: VibeBeDevicesUpdateImeiPut: Failed to parse claims: %s. Claims content: '%s'", context.GetReqId(r), err.Error(), jwt_claims)
+		handlers_common.RespondError(r, w, cerr)
+		return
+	}
+
+	partner_id := jwt_claims.Get("pid")
+	// Sending to Messaging Queue for request processing
+	request := mq.NewMQRequest(partner_id.(string), mq.MQRT_UPDATE, mq.MQSCOPE_RSL_BE_UPDATE_2I, context.GetReqId(r), mq.NewReqInfo(r))
+
+	newBody, err := json.Marshal(device_info)
+	if err != nil {
+		cerr := cerrors.New(cerrors.ERROR_INTERNAL_SERVER_ERROR, fmt.Sprintf("Failed to marshal request body: %s", err), "FE", true)
+		l4g.Error("req #%v: handlers: VibeBeDevicesUpdateImeiPut: Failed to parse claims: %s. Claims content: '%s'", context.GetReqId(r), err.Error(), jwt_claims)
+		handlers_common.RespondError(r, w, cerr)
+		return
+	}
+	//Set body of the request
+	if err = request.SetData(newBody); err != nil {
+		cerr := cerrors.New(cerrors.ERROR_INTERNAL_SERVER_ERROR, fmt.Sprintf("Failed to set request data: '%s'", err.Error()), "FE", true)
+		l4g.Error("req #%v: handlers: VibeBeDevicesRegisterPost: Failed to set request data: '%s'.", context.GetReqId(r), err.Error())
+		handlers_common.RespondError(r, w, cerr)
+		return
+	}
+
+	response, cerr := handlers_common.MQSendRecv(request)
+	if cerr != nil {
+		handlers_common.RespondError(r, w, cerr)
+		return
+	}
+	handlers_common.HTTPFeedbackCreateResult(r, w, fmt.Sprintf("/kc_rsl_be/v1.0/devices/update/%s", imei), response, nil)
+	return
 }

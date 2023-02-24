@@ -23,7 +23,7 @@ func init() {
 		rsl_partners_actions_line[i] = nil
 	}
 
-	rsl_partners_actions_line[int(mq.MQRT_CREATE)] = common.ForwardRequest(nil)
+	rsl_partners_actions_line[int(mq.MQRT_CREATE)] = Register3I(common.ForwardRequest(nil))
 }
 
 func GetAutomataLine() []common.IAutomatizer {
@@ -45,6 +45,8 @@ func Register3I(forward common.IAutomatizer) common.IAutomatizer {
 			return common.MakeErrorRsp(rsp, cerrors.ERROR_INTERNAL_SERVER_ERROR, fmt.Sprintf("Register3I: Failed to retrieve data from FE request: '%s'.", err.Error()), "LL")
 		}
 
+		l4g.Debug("req #%v: Register3I: PartnerID: %s", request.ReqId, partner_id)
+
 		//Forwarding the request to DL
 		req := mq.NewMQRequest(partner_id, mq.MQRT_CREATE, mq.MQSCOPE_RSL_BE_REGISTER_3I, request.ReqId, request.ReqInfo)
 
@@ -59,8 +61,14 @@ func Register3I(forward common.IAutomatizer) common.IAutomatizer {
 			return common.MakeErrorRsp(rsp, cerrors.ERROR_INTERNAL_SERVER_ERROR, fmt.Sprintf("Register3I: Error getting response from DL while registering 3i data: '%s'.", cerr.Error()), "LL")
 
 		}
+		rsp_data, err := rsp.GetData()
+		if err != nil {
+			l4g.Error("req #%v: Register3I: Failed to retrieve data from response:'%s'.", request.ReqId, cerr.Error())
+			rsp = mq.NewMQResponse(request.Id, request.Type, request.Scope, nil, true, request.ReqId)
+			return common.MakeErrorRsp(rsp, cerrors.ERROR_INTERNAL_SERVER_ERROR, fmt.Sprintf("Register3I: Failed to retrieve data from response: '%s'.", cerr.Error()), "LL")
+		}
 		//Returning the response to FE
-		rsp = mq.NewMQResponse(request.Id, request.Type, request.Scope, nil, false, request.ReqId)
+		rsp = mq.NewMQResponse(request.Id, request.Type, request.Scope, rsp_data, false, request.ReqId)
 		return rsp
 	})
 }

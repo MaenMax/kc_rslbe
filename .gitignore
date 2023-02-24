@@ -1,9 +1,12 @@
-kc_vibe_be_fe3/version/
-kc_vibe_be_ll3/version/
-kc_vibe_be_dl3/target/
-kc_vibe_be_dl3/src/main/java/com/kaiostech/version/
-kc_vibe_be-*.tar.bz2
-conf/kc_vibe_be.conf
+#kc_rslbe/version/
+#kc_rslbe_ll3/version/
+#kc_rslbe_fe3/version/
+kc_rslbe_dl3/target/*
+kc_rslbe_dl3/target
+kc_rslbe_dl3/pom.xml
+#kc_rslbe_dl3/src/main/java/com/kaiostech/version/
+kc_rslbe*.tar.bz2
+conf/kc_rslbe.conf
 utils/version/
 /bin/
 /out/
@@ -27,5 +30,5 @@ lastIp.txt
 bom.json
 node_modules
 package-lock.json
-kc_vibe_be_dl3/.classpath
-kc_vibe_be_dl3/.project
+kc_rslbe_dl3/.classpath
+kc_rslbe_dl3/.project

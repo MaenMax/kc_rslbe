@@ -196,6 +196,8 @@ func (p *T_ll_proc) process_request(request_id string, req *mq.MQRequest) {
 	// while some others don't.
 	jwt, _ := core.JSON2JWT([]byte(req.ReqInfo.JWT))
 
+	l4g.Debug("MAEN scope: %v, type: %v", req.Scope, req.Type)
+
 	action := p.automata.Get(req.Scope, req.Type)
 
 	if action == nil {

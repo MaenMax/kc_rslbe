@@ -7,11 +7,11 @@ import (
 
 var (
 	VERSION        string = "1.0.0"
-	BUILDID        string = "82b5b88e9fdb141cad06637dcd334c93cf1e4c22-20230118063904"
-	DATE           string = "Wed Jan 18 06:39:04 PST 2023"
+	BUILDID        string = "49c14dadbe1d40d0ded949a71ee68329071c38c0-20230224001724"
+	DATE           string = "Fri Feb 24 00:17:24 PST 2023"
 	BUILDER        string = "maen"
-	HOSTNAME       string = "ConnectON"
-	KERNEL_VERSION string = "Linux ConnectON 3.10.0-1160.81.1.el7.x86_64 #1 SMP Fri Dec 16 17:29:43 UTC 2022 x86_64 x86_64 x86_64 GNU/Linux"
+	HOSTNAME       string = "localhost.localdomain"
+	KERNEL_VERSION string = "Linux localhost.localdomain 3.10.0-1160.81.1.el7.x86_64 #1 SMP Fri Dec 16 17:29:43 UTC 2022 x86_64 x86_64 x86_64 GNU/Linux"
 	KERNEL_RELEASE string = "CentOS Linux release 7.9.2009 (Core)"
 	GO_VERSION     string = "1.19.4"
 )

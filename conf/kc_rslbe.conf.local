@@ -9,8 +9,8 @@
 	Version="v3.0"
 
 	ServicesServerName="services.dev.kaiostech.com"
-    	ServiceName=["antitheft","devlogin"]
-    
+    ServiceName=["antitheft","devlogin"]
+
 	# Name of the Authorization server.
 	# This value will be used inside the JWT for
 	# both the audience (for refresh token) and
@@ -93,7 +93,7 @@
     #  TCP/IP Port to listen to for the HTTP service.
     #
     #  Put 0 to disable HTTP service.
-	HttpPort = 8091
+	HttpPort = 8090
 
     #  TCP/IP Port to listen to for the HTTPS service.
     #
@@ -144,12 +144,8 @@
         #Refresh_Period = 200000
         Refresh_Period = 10000
 
-	Scheduler = "absolute"
+	    Scheduler = "absolute"
 
-    [FrontLayer.DeviceFinancier]
-        BlacklistedImeis    = ["000000000000000","123456789012345"]
-	GracePeriod = 345600
-	    
 [LogicLayer]
     # Maximum number of accepted concurrent request processing (goroutine)
 	MaxActiveRequest=10
@@ -219,7 +215,7 @@
 	#Cass_User = "cdev_1"
 	#Cass_Password = "Smp0ns*2ja"
 	Cass_Hosts = "127.0.0.1:9042"
-	Cass_Keyspace = "kaicloud_dev"
+	Cass_Keyspace = "kaicloud"
 
     Default_Role_Id = [ "JeRhOE86OMbyqmrzGL6U" ]
     #Default_Role_Id = "JeRhOE86OMbyqmrzGL6U"
@@ -457,24 +453,24 @@
 	JSON 		= "application/json"
 
 [SMS]
-	# Component name to use.
-	# Either 'aws_sns' or 'smpp'.
-	Component = "aws_sns"
+        # Component name to use.
+        # Either 'twilio', 'aws_sns' or 'smpp'.
+        Component = "aws_sns"
 
-	[SMS.SMPP]
-		# Host name or IP address of the SMPP server
-		Host = "10.55.79.162"
-
-		# Port to use to connect to provided host.
-		Port = 5001
+    [SMS.SMPP]
+        # Host name or IP address of the SMPP server
+        Host = "10.55.79.162"
+        # Port to use to connect to provided host.
+        Port = 5001
 
     [SMS.AWS_SNS]
-
-	    API="sns.us-east-1.amazonaws.com"
-        #Region="us-east-1"
         Version="v4"
-	    Access_Key_Name="aws_sns_access_key"
-	    Secret_Key_Name="aws_sns_secret_key"
+        Access_Key_Name="aws_sns_access_key"
+        Secret_Key_Name="aws_sns_secret_key"
+
+        [SMS.AWS_SNS.API]
+            default="sns.us-east-1.amazonaws.com"
+            US="sns.us-west-2.amazonaws.com"
 
 [Email]
 	# Component name to use.
@@ -510,3 +506,7 @@
      ServiceIdPushApp = "Q4p0uTHZeP_d_QBRET3p"
      ListChunkSize = 10000
      LockAppPushTTL = 60 #sec
+[ApplicationService]
+    [ApplicationService.DeveloperMode]
+        # maximum limit for concurrent logged in devices
+        Device_Max_Login_Limit = 0

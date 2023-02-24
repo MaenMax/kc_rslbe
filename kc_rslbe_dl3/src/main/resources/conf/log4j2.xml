@@ -1,16 +1,14 @@
-log4j2.xml        log4j.properties  
-[maen@ConnectON kc_fin_be_dl3]$ cat src/main/resources/conf/log4j2.xml 
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration shutdownHook="disable">
   <Appenders>
 
     <!--
-    <File name="DL3_TOP_LOGFILE" fileName="kc_fin_be_dl3.log" bufferedIO="true" bufferSize="65536">
+    <File name="DL3_TOP_LOGFILE" fileName="kc_rslbe_dl3.log" bufferedIO="true" bufferSize="65536">
       <PatternLayout pattern="%d [%t] %-5level %l - %msg%n"/>
     </File>
     -->
 
-    <RollingFile name="DL3_TOP_LOGFILE" fileName="kc_fin_be_dl3.log" filePattern="kc_fin_be_dl3.log.%i" ignoreExceptions="false">
+    <RollingFile name="DL3_TOP_LOGFILE" fileName="kc_rslbe_dl3.log" filePattern="kc_rslbe_dl3.log.%i" ignoreExceptions="false">
       <PatternLayout>
 		<Pattern>%d{yyyy-MM-dd HH:mm:ss} [%t] %-5level %l - %msg%n</Pattern>
 		<!--

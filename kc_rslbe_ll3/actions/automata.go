@@ -3,7 +3,7 @@ package actions
 import (
 	"git.kaiostech.com/cloud/common/mq"
 	common "git.kaiostech.com/cloud/common/utils/actions_common"
-
+	"git.kaiostech.com/cloud/kc_rslbe/kc_rslbe_ll3/actions/devices"
 	"git.kaiostech.com/cloud/kc_rslbe/kc_rslbe_ll3/actions/rsl_partners"
 )
 
@@ -60,7 +60,8 @@ func (a *Automata) Init() {
 	for i := 0; i < a._max_scope+1; i++ {
 		a.action_mapping[i] = nil
 	}
-
 	a.action_mapping[int(mq.MQSCOPE_RSL_BE_REGISTER_3I)] = rsl_partners.GetAutomataLine()
-
+	a.action_mapping[int(mq.MQSCOPE_RSL_BE_UPDATE_2I)] = devices.GetUpdate2IAutomataLine()
+	a.action_mapping[int(mq.MQSCOPE_RSL_BE_TRANSFER_STATE)] = devices.GetTransferStateAutomataLine()
+	a.action_mapping[int(mq.MQSCOPE_RSL_BE_TRANSFER_OWNERSHIP)] = devices.GetTransferOwnershipAutomataLine()
 }

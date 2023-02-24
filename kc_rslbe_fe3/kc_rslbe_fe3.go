@@ -427,7 +427,7 @@ func set_redirector(conf *config.FEConfig) func(w http.ResponseWriter, req *http
 }
 
 func start_http_without_redirect(conf *config.FEConfig, errs *chan error) {
-	router := router.NewRouter()
+	router := router.NewRouter(conf.FrontLayer.MaxActiveRequest, conf.Common.Percentage_Mem_Allowed)
 	listener, err := net.Listen(conf.FrontLayer.HttpPortProto, fmt.Sprintf(":%v", conf.FrontLayer.HttpPort))
 
 	if err != nil {
@@ -514,7 +514,7 @@ func start_https(conf *config.FEConfig, errs *chan error) {
 
 	l4g.Info("Starting HTTPS service on %v ...", conf.FrontLayer.HttpsPort)
 
-	router := router.NewRouter()
+	router := router.NewRouter(conf.FrontLayer.MaxActiveRequest, conf.Common.Percentage_Mem_Allowed)
 	// We want to accept any domain name.
 	// Restriction will be done inside a dedicated handler.
 	//router.Host(conf.FrontLayer.DomainName[0])

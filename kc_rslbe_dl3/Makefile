@@ -4,7 +4,7 @@ VERSION_FILE:=src/main/java/com/kaiostech/version/Version.java
 VERSION_DIR:=$(shell dirname ${VERSION_FILE})
 
 default: ${VERSION_FILE}
-	sh -c 'mvn package -DskipTests' && mkdir -p target/classes/jars && mvn dependency:copy-dependencies -DoutputDirectory=target/classes/jars && rm -f target/classes/jars/junit* && rm -f target/classes/jars/log4j-slf4j-impl-2.11.0.jar && cp target/kc_rslbe_dl3-*.jar ../bin && cp target/classes/scripts/* ../bin && chmod 755 ../bin/*.sh && cp -r target/classes/jars ../bin && mkdir -p ../bin/conf && cp src/main/resources/conf/log4j2.xml ../bin/conf/log4j2-dl3.xml
+	sh -c 'mvn package -DskipTests' && mkdir -p target/classes/jars && mvn dependency:copy-dependencies -DoutputDirectory=target/classes/jars && rm -f target/classes/jars/junit* && rm -f target/classes/jars/log4j-slf4j-impl-2.11.0.jar && cp target/kc_rslbe_dl3-*.jar ../bin && cp scripts/* ../bin && chmod 755 ../bin/*.sh && cp -r target/classes/jars ../bin && mkdir -p ../bin/conf && cp src/main/resources/conf/log4j2.xml ../bin/conf/log4j2-dl3.xml
 
 ${VERSION_FILE}: ../.version ../bin/gen_version_java.sh
 	mkdir -p ${VERSION_DIR} && ../bin/gen_version_java.sh ../.version >$@
@@ -22,7 +22,7 @@ test: ${VERSION_FILE}
 	@sh -c 'mvn clean test -e || echo "Failed"' 
 # add -Dtest=TestClassName to only execute one class
 all: ${VERSION_FILE}
-	sh -c 'mvn package' && cp target/kc_rslbe_dl3-*.jar ../bin && cp target/classes/scripts/* ../bin && chmod 755 ../bin/*.sh && cp -r target/classes/jars ../bin && mkdir -p ../bin/conf && cp src/main/resources/conf/log4j2.xml ../bin/conf/log4j2-dl3.xml
-
+	sh -c 'mvn package' && cp target/kc_rslbe_dl3-*.jar ../bin && cp scripts/* ../bin && chmod 755 ../bin/*.sh && cp -r target/classes/jars ../bin && mkdir -p ../bin/conf && cp src/main/resources/conf/log4j2.xml ../bin/conf/log4j2-dl3.xml
+	
 clear_cache:
 	@mvn dependency:purge-local-repository -DactTransitively=false -DreResolve=false --fail-at-end

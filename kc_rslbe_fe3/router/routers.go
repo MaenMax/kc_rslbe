@@ -12,8 +12,18 @@ package router
 import (
 	"net/http"
 	"strings"
+	"sync"
 
-	"github.com/gorilla/mux"
+	"git.kaiostech.com/cloud/common/config"
+	"git.kaiostech.com/cloud/common/utils/handlers_common"
+	"git.kaiostech.com/cloud/kc_rslbe/kc_rslbe_fe3/cred_checker"
+	l4g "git.kaiostech.com/cloud/thirdparty/code.google.com/p/log4go"
+	"git.kaiostech.com/cloud/thirdparty/github.com/gorilla/mux"
+)
+
+var (
+	mutex      sync.Mutex
+	DEFAULT_EP []string
 )
 
 type Route struct {
@@ -23,14 +33,89 @@ type Route struct {
 	HandlerFunc http.HandlerFunc
 }
 
-type Routes []Route
+type Routes []handlers_common.T_Route
 
-func NewRouter() *mux.Router {
+func NewRouter(max_req_config int, max_mem_percentage int) *mux.Router {
+	mutex.Lock()
+	handlers_common.Init_Throttle(max_req_config)
+	handlers_common.Init_Mem_Throttle(max_mem_percentage)
+
 	router := mux.NewRouter().StrictSlash(true)
+
 	for _, route := range routes {
+
 		var handler http.Handler
+		var aud_list []string
+
 		handler = route.HandlerFunc
-		handler = Logger(handler, route.Name)
+
+		/*
+			Wrapping with throttle controls.
+		*/
+		handler = handlers_common.HTTP_Throttle(handler)
+
+		if 0 < max_mem_percentage && max_mem_percentage < 100 {
+			handler = handlers_common.Memory_Throttle(handler, "FE")
+		}
+
+		// Audiences are list of End Point that are expected and accepted
+		// to be found into the audience field of the JWT token.
+		aud_list = route.Audiences
+
+		if route.Pagination != nil {
+			handler = route.Pagination(handler)
+		}
+
+		/*
+		   Wrapping Permission check handler if permission not empty.
+		*/
+		if len(route.Permissions) > 0 {
+			handler = handlers_common.PermChecker(handler, route.Permissions)
+		}
+
+		/*
+		   Wrapping Credential check only for the routes that require it.
+		*/
+		if route.CredChecker != nil {
+			handler = route.CredChecker(handler, aud_list)
+		}
+
+		/*
+		   Wrapping logging for ALL routes to see their execution trace in log file.
+		*/
+		handler = handlers_common.HTTPLogger(handler, route.Name)
+
+		// Stats API calls should not be counted into the statistics
+		if !strings.HasPrefix(route.Name, "Global Performance") {
+			/*
+			   Accumulating performance statistics/counters for Centreon monitoring
+			*/
+			handler = handlers_common.HTTPStats(handler, route.Method, route.Pattern)
+		}
+
+		/*
+		   Single Request Trail feature request to assign a unique ID to each incoming request.
+		   This will be done in this handler below.
+		*/
+		handler = handlers_common.AssignReqId(handler)
+
+		/* Wrapping context cleaning to avoid memory leak */
+		handler = handlers_common.ClearContext(handler)
+
+		if config.GetFEConfig().Common.Debug {
+			l4g.Debug("NewRouter: installing route '" + route.Name + "' for pattern '" + route.Pattern + "' with method '" + route.Method + "'")
+		}
+
+		/*
+		   Wrapping handler with execution timeout to limit resource consumption of micro service.
+		*/
+		if route.ExecTimeout != nil {
+			l4g.Debug("HandlerWithTimeout: %s %s: using timeout of %v from config.", route.Method, route.Pattern, *route.ExecTimeout)
+			handler = handlers_common.HandlerWithTimeout(handler, *route.ExecTimeout)
+		} else {
+			l4g.Debug("HandlerWithTimeout: %s %s: using timeout of %v from config.", route.Method, route.Pattern, config.GetFEConfig().FrontLayer.ExecTimeout.GetDuration())
+			handler = handlers_common.HandlerWithTimeout(handler, config.GetFEConfig().FrontLayer.ExecTimeout.GetDuration())
+		}
 
 		router.
 			Methods(route.Method).
@@ -39,50 +124,94 @@ func NewRouter() *mux.Router {
 			Handler(handler)
 	}
 
+	mutex.Unlock()
+
 	return router
 }
 
 var routes = Routes{
 
-	Route{
-		"VibeBeDevicesRegisterPost",
-		strings.ToUpper("Post"),
-		"/kc_rsl_be/v1.0/partners/{id}/3is",
-		VibeBeDevicesRegisterPost,
+	handlers_common.T_Route{
+		Name:        "VibeBeDevicesRegisterPost",
+		Method:      strings.ToUpper("Post"),
+		Pattern:     "/kc_rsl_be/v1.0/partners/{id}/3is",
+		Audiences:   DEFAULT_EP,
+		CredChecker: cred_checker.RslCredChecker("v1.0"),
+		Pagination:  nil,
+		HandlerFunc: VibeBeDevicesRegisterPost,
+		Permissions: "core#device:c",
+		InputType:   nil,
+		OutputType:  nil,
+		TC:          nil,
 	},
 
-	Route{
-		"VibeBeDevicesRslImeiPost",
-		strings.ToUpper("Post"),
-		"/kc_rsl_be/v1.0/devices/rsl/{imei}",
-		VibeBeDevicesRslImeiPost,
+	handlers_common.T_Route{
+		Name:        "VibeBeDevicesRslImeiPost",
+		Method:      strings.ToUpper("Post"),
+		Pattern:     "/kc_rsl_be/v1.0/devices/rsl/{imei}",
+		Audiences:   DEFAULT_EP,
+		CredChecker: cred_checker.RslCredChecker("v1.0"),
+		Pagination:  nil,
+		HandlerFunc: VibeBeDevicesRslImeiPost,
+		Permissions: "core#device:c",
+		InputType:   nil,
+		OutputType:  nil,
+		TC:          nil,
 	},
 
-	Route{
-		"VibeBeDevicesTransferOwnershipImeiPartnerIdPost",
-		strings.ToUpper("Post"),
-		"/kc_rsl_be/v1.0/devices/transfer_ownership/{imei}/{partner_id}",
-		VibeBeDevicesTransferOwnershipImeiPartnerIdPost,
+	handlers_common.T_Route{
+		Name:        "VibeBeDevicesTransferOwnershipImeiPartnerIdPost",
+		Method:      strings.ToUpper("Post"),
+		Pattern:     "/kc_rsl_be/v1.0/devices/transfer_ownership/{imei}/{partner_id}",
+		HandlerFunc: VibeBeDevicesTransferOwnershipImeiPartnerIdPost,
+		Audiences:   DEFAULT_EP,
+		CredChecker: cred_checker.RslCredChecker("v1.0"),
+		Pagination:  nil,
+		Permissions: "core#device:c",
+		InputType:   nil,
+		OutputType:  nil,
+		TC:          nil,
 	},
 
-	Route{
-		"VibeBeDevicesTransferStateImeiPartnerIdPost",
-		strings.ToUpper("Post"),
-		"/kc_rsl_be/v1.0/devices/transfer_state/{imei}/{partner_id}",
-		VibeBeDevicesTransferStateImeiPartnerIdPost,
+	handlers_common.T_Route{
+		Name:        "VibeBeDevicesTransferStateImeiPartnerIdPost",
+		Method:      strings.ToUpper("Post"),
+		Pattern:     "/kc_rsl_be/v1.0/devices/transfer_state/{from_imei}/{to_imei}",
+		HandlerFunc: VibeBeDevicesTransferStateImeiPartnerIdPost,
+		Audiences:   DEFAULT_EP,
+		CredChecker: cred_checker.RslCredChecker("v1.0"),
+		Pagination:  nil,
+		Permissions: "core#device:c",
+		InputType:   nil,
+		OutputType:  nil,
+		TC:          nil,
 	},
 
-	Route{
-		"VibeBeDevicesUnleashImeiPost",
-		strings.ToUpper("Post"),
-		"/kc_rsl_be/v1.0/devices/unleash/{imei}",
-		VibeBeDevicesUnleashImeiPost,
+	handlers_common.T_Route{
+		Name:        "VibeBeDevicesUnleashImeiPost",
+		Method:      strings.ToUpper("Post"),
+		Pattern:     "/kc_rsl_be/v1.0/devices/unleash/{imei}",
+		HandlerFunc: VibeBeDevicesUnleashImeiPost,
+		Audiences:   DEFAULT_EP,
+		CredChecker: cred_checker.RslCredChecker("v1.0"),
+		Pagination:  nil,
+		Permissions: "core#device:c",
+		InputType:   nil,
+		OutputType:  nil,
+		TC:          nil,
 	},
 
-	Route{
-		"VibeBeDevicesUpdateImeiPut",
-		strings.ToUpper("Put"),
-		"/kc_rsl_be/v1.0/devices/update/{imei}",
-		VibeBeDevicesUpdateImeiPut,
+	handlers_common.T_Route{
+		Name:        "VibeBeDevicesUpdateImeiPut",
+		Method:      strings.ToUpper("Put"),
+		Pattern:     "/kc_rsl_be/v1.0/devices/update/{imei}",
+		HandlerFunc: VibeBeDevicesUpdateImeiPut,
+		Audiences:   DEFAULT_EP,
+		CredChecker: cred_checker.RslCredChecker("v1.0"),
+		Pagination:  nil,
+		Permissions: "core#device:c",
+		InputType:   nil,
+		OutputType:  nil,
+		TC:          nil,
 	},
 }
